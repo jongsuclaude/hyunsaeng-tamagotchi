@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>현생 다마고치</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+/* 레이아웃: 게임 화면(폰) 하나가 주인공, 옆(좁으면 아래)에 바꿔보는 조작판. 그 아래 엔딩 3버전과 성장 흐름 */
+:root {
+  color-scheme: dark;
+  --night: #141833;      /* 바탕: 게임 UI 남색보다 한 단계 깊게 */
+  --navy: #1E2340;       /* 게임 UI 남색 */
+  --panel: #262C55;      /* 조작판 면 */
+  --gold: #E8B84A;       /* 게임 금테 */
+  --gold-dim: #A87A22;
+  --cream: #FFF4DC;      /* 본문 글자 */
+  --muted: #B9B6D6;      /* 보조 글자 */
+  --pink: #FF6F91;       /* 선택 강조 (게임의 💕 선택지 색) */
+  --line: #3B4680;
+  --display: "Jua", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --body: "Gowun Dodum", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--night); color: var(--cream); font-family: var(--body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 48px; display: grid; gap: 44px; }
+header { display: grid; gap: 6px; }
+.eyebrow { font-size: 12px; letter-spacing: .12em; color: var(--gold); }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(34px, 7vw, 52px); line-height: 1.1; margin: 0; color: #FFE7A8; text-shadow: 0 3px 0 #000; text-wrap: balance; }
+.lead { margin: 0; color: var(--muted); max-width: 60ch; }
+h2 { font-family: var(--display); font-weight: 400; font-size: 26px; margin: 0 0 4px; color: #FFE7A8; text-wrap: balance; }
+.sub { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+
+/* 게임 화면 + 조작판 */
+.play { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (max-width: 760px) { .play { grid-template-columns: minmax(0, 1fr); justify-items: center; } .panel { width: 100%; } }
+.phone { position: relative; width: 100%; max-width: 360px; aspect-ratio: 9 / 16; border: 3px solid var(--gold); outline: 2px solid var(--gold-dim); outline-offset: 2px; border-radius: 10px; overflow: hidden; background: var(--navy); box-shadow: 0 10px 0 rgba(0,0,0,.35); }
+.phone canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; cursor: pointer; touch-action: manipulation; }
+.who { position: absolute; top: 2.2%; right: 4%; font-family: var(--display); font-size: clamp(12px, 3.6vw, 15px); color: #FFE7A8; text-shadow: 0 1px 0 #000; pointer-events: none; text-align: right; line-height: 1.25; }
+.who small { display: block; font-family: var(--body); font-size: .8em; color: var(--cream); opacity: .85; }
+.toast { position: absolute; left: 50%; top: 12%; transform: translateX(-50%); background: rgba(30,35,64,.94); border: 2px solid var(--gold); border-radius: 6px; padding: 4px 10px; font-size: 13px; white-space: nowrap; opacity: 0; transition: opacity .25s; pointer-events: none; }
+.toast.on { opacity: 1; }
+.hint { margin: 10px 0 0; font-size: 13px; color: var(--muted); text-align: center; }
+
+.panel { background: var(--panel); border: 2px solid var(--line); border-radius: 8px; padding: 18px; display: grid; gap: 16px; min-width: 0; }
+.group { display: grid; gap: 8px; min-width: 0; }
+.label { font-size: 12px; letter-spacing: .08em; color: var(--gold); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips .sep { flex-basis: 100%; height: 0; }
+.chip { font: inherit; font-size: 14px; color: var(--cream); background: var(--navy); border: 2px solid var(--line); border-radius: 6px; padding: 6px 11px; min-height: 36px; cursor: pointer; }
+.chip:hover { border-color: var(--gold-dim); }
+.chip[aria-pressed="true"] { border-color: var(--pink); background: #4A2E5A; }
+.chip:focus-visible, .btn:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.chip:disabled { opacity: .45; cursor: default; }
+.stagehead { font-size: 12px; color: var(--muted); width: 100%; margin-top: 2px; }
+input[type=range] { width: 100%; accent-color: var(--gold); }
+.ticks { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.btn { font: inherit; font-family: var(--display); font-size: 16px; color: var(--navy); background: var(--gold); border: 0; border-radius: 6px; padding: 9px 14px; cursor: pointer; justify-self: start; }
+.btn[hidden] { display: none; }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+
+/* 엔딩 3버전 */
+.ends { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 760px) { .ends { grid-template-columns: minmax(0, 1fr); justify-items: center; } }
+.end { position: relative; width: 100%; max-width: 320px; aspect-ratio: 9 / 16; border-radius: 8px; overflow: hidden; border: 2px solid var(--line); background: #000; }
+.end img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+.end h3 { position: absolute; top: 3%; left: 0; right: 0; margin: 0; text-align: center; font-family: var(--display); font-weight: 400; font-size: 17px; color: #FFE7A8; text-shadow: 0 2px 0 #000, 0 0 6px #000; padding: 0 8px; text-wrap: balance; }
+.end .box { position: absolute; left: 4%; right: 4%; bottom: 3%; background: rgba(30,35,64,.92); border: 2px solid var(--gold); border-radius: 6px; padding: 8px 10px; font-size: 12.5px; line-height: 1.5; }
+.end .box p { margin: 0 0 4px; }
+.end .box p:last-child { margin: 0; color: #FFE7A8; }
+.tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 10px; background: var(--navy); border: 1px solid var(--gold-dim); margin-bottom: 8px; }
+
+/* 성장 흐름 (실제 순서라 번호를 붙임) */
+.flow { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; counter-reset: s; }
+.flow li { background: var(--panel); border: 2px solid var(--line); border-radius: 8px; padding: 12px; counter-increment: s; min-width: 0; }
+.flow li::before { content: counter(s); font-family: var(--display); color: var(--gold); font-size: 20px; display: block; line-height: 1; margin-bottom: 4px; }
+.flow b { font-family: var(--display); font-weight: 400; font-size: 17px; display: block; }
+.flow .t { font-size: 12px; color: var(--gold); font-variant-numeric: tabular-nums; }
+.flow p { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">와이프 다마고치 · 개발 중 미리보기</div>
+    <h1>현생 다마고치</h1>
+    <p class="lead">현생을 살아가는 동물들. 알에서 깨어난 아이를 5일 동안 돌보면, 어떻게 키웠는지에 따라 직업과 성격이 다른 어른이 됩니다.</p>
+  </header>
+
+  <section>
+    <h2>직접 눌러보기</h2>
+    <p class="sub">실제 게임 화면과 같은 그림·애니메이션입니다. 아래 밥·놀기·할 일 버튼을 누르거나 아이를 쓰다듬어 보세요.</p>
+    <div class="play">
+      <div style="width:100%;max-width:360px">
+        <div class="phone">
+          <canvas id="scr" width="180" height="320" aria-label="게임 화면"></canvas>
+          <div class="who" id="who"></div>
+          <div class="toast" id="toast" role="status"></div>
+        </div>
+        <p class="hint">버튼: 밥 · 놀기 · 할 일 / 아이를 누르면 쓰다듬기</p>
+      </div>
+      <div class="panel">
+        <div class="group">
+          <span class="label">성별 (이름 지을 때 선택)</span>
+          <div class="chips" id="g-gender"></div>
+        </div>
+        <div class="group">
+          <span class="label">성장 단계</span>
+          <div class="chips" id="g-form"></div>
+          <button class="btn" id="hatch" hidden>알 부화시키기</button>
+        </div>
+        <div class="group">
+          <span class="label">지금 상태</span>
+          <div class="chips" id="g-pose"></div>
+        </div>
+        <div class="group">
+          <span class="label">시간대 (실제 시계 기준으로 바뀜)</span>
+          <div class="chips" id="g-tod"></div>
+        </div>
+        <div class="group">
+          <span class="label">방 꾸미기 (능력치가 오르면 물건이 생겨요)</span>
+          <input type="range" id="tier" min="0" max="3" step="1" value="2" aria-label="방 꾸미기 단계">
+          <div class="ticks"><span>빈 방</span><span>조금</span><span>꽤</span><span>가득</span></div>
+        </div>
+        <div class="group">
+          <span class="label">성향 (청소년부터 머리 위에 표시)</span>
+          <div class="chips" id="g-karma"></div>
+        </div>
+        <p class="note">청소년·어른 모습과 엔딩 그림은 지금 만들고 있어서, 완성된 것만 들어 있어요.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>엔딩은 성향에 따라 세 가지</h2>
+    <p class="sub">같은 직업, 같은 엔딩이라도 어떻게 키웠는지(착함·보통·나쁨)에 따라 장면과 후일담이 달라져요.</p>
+    <span class="tag" id="endtag"></span>
+    <div class="ends" id="ends"></div>
+  </section>
+
+  <section>
+    <h2>5일 동안의 성장</h2>
+    <p class="sub">앱을 꺼둬도 시간은 흘러요. 밤 11시부터 아침 7시까지는 아이도 잡니다.</p>
+    <ol class="flow">
+      <li><b>알</b><span class="t">5분</span><p>흔들흔들. 깨어나면 이름과 성별을 정해요.</p></li>
+      <li><b>아기</b><span class="t">1시간</span><p>밥 주고 놀아주기. 배고픔·기분 하트를 지켜요.</p></li>
+      <li><b>어린이</b><span class="t">약 1일</span><p>공부·운동·친구·예술·덕질·휴식 중 할 일을 골라줘요.</p></li>
+      <li><b>노멀 청소년</b><span class="t">1일</span><p>가장 많이 키운 능력치로 공부파·운동파 등 5갈래.</p></li>
+      <li><b>청소년</b><span class="t">1일</span><p>돌봄과 이벤트 선택에 따라 모범생 또는 마이웨이.</p></li>
+      <li><b>어른</b><span class="t">2일</span><p>직업 13가지(히든 3). 성향 이벤트가 이어져요.</p></li>
+      <li><b>엔딩</b><span class="t">65가지 × 3</span><p>직업별 엔딩 5개, 성향별 3버전. 앨범에 남아요.</p></li>
+    </ol>
+  </section>
+
+  <footer>개발 중 미리보기 · 그림은 모두 Codex로 생성한 도트를 게임 크기(180×320)로 맞춘 것이에요. 고양이 다음에 곰·토끼가 추가될 예정입니다.</footer>
+</div>
+
+<script src="meta.js"></script>
+<script>
+(() => {
+  const M = window.META;
+  const W = 180, H = 320, BASE_Y = 248;
+  const STATES = { idle: '대기', eat: '밥', happy: '기쁨', sad: '시무룩', sleep: '잠', pack: '짐 싸기' };
+  const FPS = { idle: 6, eat: 8, happy: 10, sad: 5, sleep: 3, pack: 8 };
+  const SLOTS = { otk: [84, 104], int: [96, 166], bond: [148, 98], cha: [152, 214], str: [24, 268], emo: [150, 268] };
+  const TINT = { day: null, sunset: '#ffd2b4', night: '#9ea4d8' };
+  const ACTS = [['study', '공부'], ['sports', '운동'], ['friend', '친구 만나기'], ['art', '그림 그리기'], ['otaku', '덕질'], ['rest', '휴식']];
+  const NAME = { M: '보리', F: '나비' };
+
+  // 상태
+  const S = { g: 'F', form: 'child', pose: 'idle', tod: 'day', tier: 2, karma: 'normal', egg: false, hatchAt: 0, flash: null, flashUntil: 0, hopAt: -1, hearts: 3, stars: 3, act: -1, floats: [] };
+
+  // 이미지
+  const img = {};
+  // 단독 HTML(그림 내장)이면 window.ASSET에서, 아니면 a/ 폴더에서
+  const src = (k) => (window.ASSET && window.ASSET[k]) || `a/${k}.png`;
+  const load = (k) => img[k] || (img[k] = Object.assign(new Image(), { src: src(k) }));
+  ['room-M-day','room-M-sunset','room-M-night','room-F-day','room-F-sunset','room-F-night','egg',
+   ...['int','str','cha','emo','otk','bond'].flatMap(p => [1,2,3].map(i => `obj-${p}-${i}`)),
+   'heart','heart-empty','star','star-empty','halo','horns','btn-feed','btn-play','btn-todo','frame-top','frame-bottom','frame-button',
+   ...ACTS.map(a => `act-${a[0]}`)].forEach(k => load(k));
+  const charImg = (g, f) => load(`char-${g}-${f}`);
+  M.forms.forEach(f => { charImg('M', f.id); charImg('F', f.id); });
+  const ok = (i) => i && i.complete && i.naturalWidth;
+
+  // 노을·밤엔 방 물건을 어둡게 (게임과 같은 곱하기 색)
+  const tinted = {};
+  function tint(k, tod) {
+    const src = img[k]; if (!ok(src) || !TINT[tod]) return src;
+    const key = k + tod; if (tinted[key]) return tinted[key];
+    const c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
+    const x = c.getContext('2d'); x.drawImage(src, 0, 0);
+    x.globalCompositeOperation = 'multiply'; x.fillStyle = TINT[tod]; x.fillRect(0, 0, c.width, c.height);
+    x.globalCompositeOperation = 'destination-in'; x.drawImage(src, 0, 0);
+    return (tinted[key] = c);
+  }
+
+  // 조작판
+  const $ = (id) => document.getElementById(id);
+  function chips(el, items, get, set) {
+    el.innerHTML = '';
+    for (const it of items) {
+      if (it.sep) { const s = document.createElement('span'); s.className = 'stagehead'; s.textContent = it.sep; el.append(s); continue; }
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.id = `${el.id}-${it.v}`; b.textContent = it.t;
+      b.onclick = () => { set(it.v); render(); };
+      el.append(b);
+    }
+    el._sync = () => el.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', String(b.id === `${el.id}-${get()}`)));
+  }
+  const formItems = [{ v: 'egg', t: '알' }, ...M.forms.filter(f => f.stage === 'baby' || f.stage === 'child').map(f => ({ v: f.id, t: f.label }))];
+  const groupsOf = { normal: '노멀 청소년 (가장 많이 키운 능력치)', teen: '청소년 (모범 / 마이웨이)', adult: '어른 (직업)' };
+  for (const st of ['normal', 'teen', 'adult']) {
+    const fs = M.forms.filter(f => f.stage === st); if (!fs.length) continue;
+    formItems.push({ sep: groupsOf[st] }, ...fs.map(f => ({ v: f.id, t: f.label })));
+  }
+  chips($('g-gender'), [{ v: 'M', t: '🩶 남자아이' }, { v: 'F', t: '🤍 여자아이' }], () => S.g, v => (S.g = v));
+  chips($('g-form'), formItems, () => (S.egg ? 'egg' : S.form), v => { if (v === 'egg') { S.egg = true; S.hatchAt = 0; } else { S.egg = false; S.form = v; } S.flash = null; });
+  chips($('g-pose'), Object.entries(STATES).map(([v, t]) => ({ v, t })), () => S.pose, v => { S.pose = v; S.flash = null; });
+  chips($('g-tod'), [{ v: 'day', t: '☀️ 낮' }, { v: 'sunset', t: '🌇 노을' }, { v: 'night', t: '🌙 밤' }], () => S.tod, v => (S.tod = v));
+  chips($('g-karma'), [{ v: 'good', t: '😇 착함' }, { v: 'normal', t: '🙂 보통' }, { v: 'bad', t: '😈 나쁨' }], () => S.karma, v => (S.karma = v));
+  $('tier').oninput = (e) => { S.tier = +e.target.value; };
+  $('hatch').onclick = () => { S.hatchAt = performance.now(); toast('알이 깨어나요!'); };
+
+  function stageOf() { return S.egg ? 'egg' : (M.forms.find(f => f.id === S.form) || {}).stage; }
+  function render() {
+    ['g-gender', 'g-form', 'g-pose', 'g-tod', 'g-karma'].forEach(id => $(id)._sync());
+    $('hatch').hidden = !S.egg;
+    $('g-pose').querySelectorAll('.chip').forEach(b => (b.disabled = S.egg));
+    const f = M.forms.find(x => x.id === S.form);
+    $('who').innerHTML = S.egg ? '알<small>곧 깨어날 것 같아요</small>' : `${NAME[S.g]}<small>${f.stage === 'baby' || f.stage === 'child' ? f.label : f.label}</small>`;
+  }
+  let toastT;
+  function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), 1600); }
+
+  // 그리기
+  const cv = $('scr'), cx = cv.getContext('2d'); cx.imageSmoothingEnabled = false;
+  const draw = (k, x, y) => { const i = img[k]; if (ok(i)) cx.drawImage(i, Math.round(x), Math.round(y)); };
+  const drawC = (k, x, y) => { const i = img[k]; if (ok(i)) cx.drawImage(i, Math.round(x - i.width / 2), Math.round(y - i.height / 2)); };
+  let petBox = null;
+
+  function frame(now) {
+    const t = now / 1000;
+    cx.clearRect(0, 0, W, H);
+    draw(`room-${S.g}-${S.tod}`, 0, 0);
+    if (S.tier) for (const [p, [x, y]] of Object.entries(SLOTS)) {
+      const k = `obj-${p}-${S.tier}`, i = tint(k, S.tod);
+      if (ok(img[k])) cx.drawImage(i, Math.round(x - i.width / 2), Math.round(y - i.height));
+    }
+    const pose = S.flash && now < S.flashUntil ? S.flash : S.pose;
+    if (!S.egg && pose === 'sleep') { cx.fillStyle = 'rgba(10,12,36,.45)'; cx.fillRect(0, 0, W, H); }
+    cx.fillStyle = 'rgba(0,0,0,.25)'; cx.beginPath(); cx.ellipse(90, 247, 17, 3, 0, 0, Math.PI * 2); cx.fill();
+
+    // 펫
+    let sheet, row, fi, hop = 0;
+    if (S.egg) {
+      sheet = img.egg;
+      const since = S.hatchAt ? (now - S.hatchAt) / 1000 : -1;
+      if (since >= 0 && since < 6 / 8 + .3) { row = M.egg.hatch; fi = Math.min(5, Math.floor(since * 8)); }
+      else if (since >= 0) { S.egg = false; S.form = 'baby'; S.pose = 'idle'; S.flash = 'happy'; S.flashUntil = now + 1800; render(); toast(`${NAME[S.g]}가 태어났어요!`); return requestAnimationFrame(frame); }
+      else { row = M.egg.wobble; fi = Math.floor(t * 5) % 6; }
+    } else {
+      sheet = charImg(S.g, S.form); row = M.char[`${S.g}-${S.form}`][pose]; fi = Math.floor(t * FPS[pose]) % 6;
+      if (S.hopAt >= 0) { const d = (now - S.hopAt) / 320; if (d < 1) hop = Math.round(Math.sin(d * Math.PI) * 10); else S.hopAt = -1; }
+    }
+    const px = Math.round(90 - row.w / 2), py = BASE_Y - row.h - hop;
+    if (ok(sheet)) cx.drawImage(sheet, fi * row.w, row.y, row.w, row.h, px, py, row.w, row.h);
+    petBox = [px, py, row.w, row.h];
+    const head = row.head && row.head[fi] ? { x: px + row.head[fi][0], y: py + row.head[fi][1] } : { x: 90, y: py };
+    const st = stageOf();
+    if ((st === 'normal' || st === 'teen' || st === 'adult') && S.karma !== 'normal') drawC(S.karma === 'good' ? 'halo' : 'horns', head.x, S.karma === 'good' ? head.y - 3 : head.y + 2);
+    if (!S.egg && S.act >= 0) drawC(`act-${ACTS[S.act][0]}`, head.x + 22, head.y + 8 + Math.sin(t * 3.3));
+
+    // 떠오르는 하트
+    S.floats = S.floats.filter(f => now - f.at < 900);
+    for (const f of S.floats) { const d = (now - f.at) / 900; cx.globalAlpha = 1 - d; drawC('heart', f.x, f.y - d * (18 + f.k * 3)); cx.globalAlpha = 1; }
+
+    // 상단 바·하단 버튼
+    draw('frame-top', 0, 0);
+    for (let i = 0; i < 4; i++) { drawC(i < S.hearts ? 'heart' : 'heart-empty', 12 + i * 11, 9); drawC(i < S.stars ? 'star' : 'star-empty', 12 + i * 11, 19); }
+    draw('frame-bottom', 0, H - 50);
+    [[30, 'btn-feed'], [90, 'btn-play'], [150, 'btn-todo']].forEach(([x, k]) => { drawC('frame-button', x, H - 25); drawC(k, x, H - 25); });
+    requestAnimationFrame(frame);
+  }
+
+  // 화면 누르기
+  cv.addEventListener('pointerdown', (e) => {
+    const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * W / r.width, y = (e.clientY - r.top) * H / r.height, now = performance.now();
+    if (y > H - 50) {
+      if (S.egg) return toast('알이 깨어나면 돌볼 수 있어요');
+      const b = x < 60 ? 'feed' : x < 120 ? 'play' : x < 180 ? 'todo' : null;
+      if (b === 'feed') { S.flash = 'eat'; S.flashUntil = now + 2600; S.hearts = Math.min(4, S.hearts + 1); toast('냠냠! 배고픔 하트가 찼어요'); }
+      if (b === 'play') { S.flash = 'happy'; S.flashUntil = now + 2000; S.stars = Math.min(4, S.stars + 1); toast('신난다! 기분 별이 올랐어요'); }
+      if (b === 'todo') { S.act = S.act + 1 >= ACTS.length ? -1 : S.act + 1; toast(S.act < 0 ? '할 일을 마쳤어요' : `${ACTS[S.act][1]} 하는 중… (3시간)`); }
+      return;
+    }
+    if (petBox && !S.egg && x >= petBox[0] && x <= petBox[0] + petBox[2] && y >= petBox[1] && y <= petBox[1] + petBox[3]) {
+      S.hopAt = now; for (let k = 0; k < 3; k++) S.floats.push({ x: 90 + (k - 1) * 10, y: petBox[1] - 4, k, at: now + k * 90 });
+      toast('쓰다듬쓰다듬 💕 (유대 +1)');
+    }
+  });
+
+  // 엔딩 3버전
+  const E = M.ending, ends = $('ends');
+  $('endtag').textContent = `예시: ${E.job} · 엔딩 1 · 여자아이`;
+  const nm = (s) => s.replaceAll('{이름}', NAME.F);
+  for (const [v, label] of [['good', '😇'], ['normal', '🙂'], ['bad', '😈']]) {
+    const d = E.versions[v], el = document.createElement('div'); el.className = 'end';
+    el.innerHTML = `<img src="${src(`ending-${v}`)}" alt="${label} ${d.title}"><h3>${E.emoji} ${d.title}</h3><div class="box"><p></p><p></p></div>`;
+    const ps = el.querySelectorAll('.box p'); ps[0].textContent = nm(E.body).replace(/\n/g, ' '); ps[1].textContent = nm(d.epilogue);
+    ends.append(el);
+  }
+
+  render();
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
